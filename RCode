@@ -1,0 +1,357 @@
+library(data.table)
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(readr)
+library(readxl)
+library(shinythemes)
+
+#datasets for statistic
+data1 = read.csv("Tourism_Receipts.csv", header = TRUE, sep = ",")
+data2 = read.csv("Visitor_Arrivals.csv", header = TRUE, sep = ",")
+mydata2 <- read.csv("tourist_receipt.csv")
+
+#datasets for table output
+island <- read_excel("island.xlsx")
+
+#vector for input state
+mychoices <- c("Johor", "Kedah",  "Kelantan","Melacca","Negeri Sembilan","Pahang", 
+               "Penang", "Perak","Perlis", "Sabah", "Sarawak","Selangor", "Terengganu")
+
+#vector for input activities
+Beach <- c("Hamrock relaxation", "Beach Futsal", "Beach Volleyball", "Fishing", 
+           "Sunbathing", "Sightseeing", "Blue Tears Watching", "Stargazing")
+Sea <- c("Swimming", "Diving", "Snorkeling", "Island Hopping", "Canoeing", "Surfing", "Kayaking", "Boarding", 
+         "Skiing", "Water slides", "Paddle Boating", "Boat Riding", "Sipadan Liveaboard", "Mangrove Tour")
+Mountain <- c("Jungle Trekking", "Hiking", "Rainforest Walk", "Therapeutic volcanic mud bath")
+Animals <- c("Fish", "Squid", "Turtle", "Dolphin", "Hamster", "Bird", "Whale shark")
+Others <- c("Shopping","Spa", "Disco, karaoke and live bands", "Bike Riding", "Trishaw Riding")
+Special <- "Visit"
+Type <- c("Beach", "Sea", "Mountain", "Animals", "Others", "Special")
+
+#datasets for ranking
+mydata <- read.csv("islandranking.csv")
+
+ui <- fluidPage(theme = shinytheme("united"),
+                
+                navbarPage(
+                  "Tourist Attraction Checker",
+                  
+                  navbarMenu("Statistics",
+                             tabPanel("Overview", 
+                                      h1(" Overview of Malaysia's Tourism from 2018-2020 "),
+                                      navlistPanel(widths = c(2,8),
+                                                   tabPanel(title = "Receipts",
+                                                            plotOutput("line1", height = 550, width = 1200)
+                                                   ),
+                                                   tabPanel(title = "Arrivals",
+                                                            plotOutput("line2", height = 550, width = 1200)
+                                                   )
+                                      )
+                             ),
+                             
+                             tabPanel("Graphs", 
+                                      h1("Statistic of Malaysia's Tourism"),
+                                      sidebarLayout(
+                                        sidebarPanel(width = 3,
+                                                     selectInput(inputId = "sel_Statistic",
+                                                                 label = "Choose a Statistic",
+                                                                 choices = c("Total Domestic Tourism Receipts by State",
+                                                                             "Total Domestic Visitor Arrivals by State"),
+                                                                 selected = "Total Domestic Tourism Receipts by State"),
+                                                     selectInput(inputId = "sel_Plot",
+                                                                 label = "Choose a Plot Type",
+                                                                 choices = c("Bar", "Lollipop"),
+                                                                 selected = "Bar"),
+                                                     selectInput(inputId = "sel_Year",
+                                                                 label = "Choose a Year:",
+                                                                 list("Y2018","Y2019", "Y2020"),
+                                                                 selected="Y2020"),
+                                                     radioButtons(inputId = "sel_Colour",
+                                                                  label = "Background colour:",
+                                                                  choices = c("bisque", "plum", "aquamarine"),
+                                                                  selected = "bisque"),
+                                        ),
+                                        mainPanel(
+                                          plotOutput("plot", height = 550, width = 1100)
+                                        )
+                                      )
+                             ),
+                             tabPanel("Data", 
+                                      h1("Data of Tourist Arrivals & Receipts To Malaysia"),
+                                      navlistPanel(widths = c(2,8),
+                                                   tabPanel(title = "Overview", 
+                                                            tableOutput("mytable2" )
+                                                   ),
+                                                   tabPanel(title = "Receipts",
+                                                            tableOutput("mytable3")
+                                                   ),
+                                                   tabPanel(title = "Arrivals",
+                                                            tableOutput("mytable4")
+                                                   )
+                                      )
+                             )
+                  ),
+                  
+                  navbarMenu("Island",
+                             tabPanel("By STATE", 
+                                      h1("Search your desired ISLAND in Malaysia"),
+                                      sidebarLayout(
+                                        sidebarPanel(width = 2,
+                                                     selectInput("State","Select State: ",
+                                                                 choices = mychoices, selected = NULL, multiple = TRUE),
+                                                     checkboxInput("all","Select All / None", value = TRUE),
+                                        ),
+                                        mainPanel(
+                                          DT::DTOutput("table_island_selected"), width = 10)
+                                      )
+                             ),
+                             tabPanel("By ACTIVITIES",
+                                      h1("Search your desired ISLAND in Malaysia"),
+                                      sidebarLayout(
+                                        sidebarPanel(width = 2,
+                                                     selectInput("Types","Select Types: ", Type, selected = Beach),
+                                                     radioButtons("Activities","Select Activities: ",Beach),
+                                        ),
+                                        mainPanel(
+                                          dataTableOutput(outputId = "activitytable"), width = 10)
+                                      )
+                             )
+                             
+                  ),
+                  
+                  
+                  tabPanel("Ranking", 
+                           h1("Top 10 Malaysia Islands To Visit"),
+                           img(src="island.jpg",height = 400, width = 1460), 
+                           DT::dataTableOutput("mytable"),
+                  ),
+                  
+                  tabPanel("Documentation",
+                           h1("About This App"),
+                           h3("Tourist Attraction Checker is an informative application that can help users to explore the attractive islands of different states in Malaysia for vacation. "),
+                           h3("This application analyses on total domestic receipts and tourist arrivals by state in different years by allowing the users to select different types of plot for data exploration! Users can select the year they desire interactively by moving the slider to the corresponding year. The modifications will shortly be updated on the line chart. 
+      By selecting the states or types of activities, the users can get the suggestion on islands name to travel to. "),
+                           hr(),
+                           h2("User Guide"),
+                           img(src="guide1.png", height = 500, width = 720), 
+                           img(src="guide2.png", height = 500, width = 720),
+                           img(src="guide3.png", height = 500, width = 720),
+                           img(src="guide4.png", height = 500, width = 720),
+                           img(src="guide.png", height = 600, width = 1200, style="display: block; margin-left: auto; margin-right: auto;"),
+                           hr(),
+                           h2("Presentation"),
+                           h3("The slide show presentation of this app can be viewed at",tags$a(href="https://rpubs.com/TANWEILING/tourist_attraction_checker", 
+                                                                                                "here."), "This was created using Rstudio Presenter. "),
+                           hr(),
+                           h2("Data source"),
+                           h3(tags$a(href="https://www.dosm.gov.my/v1/index.php?r=column/cthemeByCat&cat=472&bul_id=NnZBTUo1c04rZVlUcnZzOUtkbFA5UT09&menu_id=b0pIV1E3RW40VWRTUkZocEhyZ1pLUT09", 
+                                     "Click here to get data on Total Domestic Tourism Receipts by State in Malaysia from 2019 to 2020.")),
+                           br(),
+                           h3(tags$a(href="http://mytourismdata.tourism.gov.my/?page_id=242#!range=year&from=1998&to=2020&type=564ad2bc452c7,5587bdc73aea7&destination=34MY", 
+                                     "Click here to get data on Tourist Receipts From 1998 to 2020."))
+                  )
+                )
+)
+
+server <- function(input, output, session) {
+
+##Ranking##
+  output$mytable = DT::renderDataTable({
+    mydata
+  })
+  
+##Island##
+  
+  #output table according to state(s) selected
+  observe({
+    updateSelectInput(
+      session, 'State', choices = mychoices,
+      selected = if(input$all) mychoices
+    )
+  })
+  island_selected <- function(){
+    island_selected <- island %>%
+      filter(State %in% c(input$State))
+  }
+  output$table_island_selected <- DT::renderDT({
+    island_selected()
+  })
+  
+  #output table according to activity selected
+  observe({
+    if("Beach" %in% input$Types)
+      updateRadioButtons(session, "Activities", 
+                         choices = Beach)
+    else if("Sea" %in% input$Types)
+      updateRadioButtons(session, "Activities", 
+                         choices = Sea)
+    else if("Mountain" %in% input$Types)
+      updateRadioButtons(session, "Activities", 
+                         choices = Mountain)
+    else if("Animals" %in% input$Types)
+      updateRadioButtons(session, "Activities", 
+                         choices = Animals)
+    else if("Others" %in% input$Types)
+      updateRadioButtons(session, "Activities", 
+                         choices = Others)
+    if("Special" %in% input$Types)
+      updateRadioButtons(session, "Activities", 
+                         choices = Special)
+  })
+  
+  activitySelected <- function(){
+    activitySelected <- island
+    activitySelected <- activitySelected[activitySelected$Activity %like% input$Activities, ]
+  }
+  
+  output$activitytable <- DT::renderDT({
+    activitySelected()
+  }) 
+  
+##Statistic##
+  output$line1 <- renderPlot({
+    totalReceipts <- data.frame(year = c("2018","2019","2020"),
+                                total = c(sum(data1$Y2018),sum(data1$Y2019),sum(data1$Y2020))
+    )
+    
+    ggplot(totalReceipts, aes(x=totalReceipts$year, y=totalReceipts$total, group=1))+
+      geom_line(linetype = "dashed", color="brown")+
+      geom_point(size=4, color=totalReceipts$year) +
+      geom_text(aes(label=totalReceipts$total), vjust=-0.8, size=3.5)+
+      labs(x ="Year", y= "RM Billion") +
+      ggtitle(paste("Line Chart : Total of Domestic Tourism Receipts From 2018 to 2020"))+
+      theme(legend.position="none", 
+            axis.text.x = element_text(colour = "black",size = 9.5,face = "bold"),
+            axis.text.y = element_text(colour = "black",size = 9.5,face = "bold"),
+            axis.title.x = element_text(size = 12, face = "bold"),
+            axis.title.y = element_text(size = 12, face = "bold"),
+            plot.title = element_text(colour = "black", face = "bold"),
+            axis.line = element_line(colour = "black"),
+            plot.background = element_rect(fill = "lavenderblush")
+      ) 
+  })
+  output$line2 <- renderPlot({
+    totalVisitors <- data.frame(year = c("2018","2019","2020"),
+                                total = c(sum(data2$Y2018),sum(data2$Y2019),sum(data2$Y2020))
+    )
+    
+    ggplot(totalVisitors, aes(x=totalVisitors$year, y=totalVisitors$total, group=1))+
+      geom_line(linetype = "dashed", color="purple")+
+      geom_point(size=4, color=totalVisitors$year) +
+      geom_text(aes(label=totalVisitors$total), vjust=-0.8, size=3.5)+
+      labs(x ="Year", y= "Number of domestic visitor (Million)") +
+      ggtitle(paste("Line Chart : Total of Domestic Visitor Arrivals From 2018 to 2020"))+
+      theme(legend.position="none", 
+            axis.text.x = element_text(colour = "black",size = 9.5,face = "bold"),
+            axis.text.y = element_text(colour = "black",size = 9.5,face = "bold"),
+            axis.title.x = element_text(size = 12, face = "bold"),
+            axis.title.y = element_text(size = 12, face = "bold"),
+            plot.title = element_text(colour = "black", face = "bold"),
+            axis.line = element_line(colour = "black"),
+            plot.background = element_rect(fill = "lavenderblush2")
+      )
+  })
+  
+  # Summarize Data and Plot Chart 
+  receiptByState <- reactive({
+    req(input$sel_Year)
+    df <- data1 %>% select(State, Year = input$sel_Year)
+  })
+  visitorsByState <- reactive({
+    req(input$sel_Year)
+    df <- data2 %>% select(State, Year = input$sel_Year)
+  })
+  
+  # Plot
+  output$plot <- renderPlot({
+    if(input$sel_Statistic == "Total Domestic Tourism Receipts by State"){
+      
+      if(input$sel_Plot == "Bar") {
+        ggplot(receiptByState(), aes(x = reorder(State, -Year), y = Year, fill=State)) +  
+          geom_bar(stat = "identity") +
+          geom_text(aes(label=Year), vjust=-0.3, size=3.5)+
+          labs(x ="States", y= "RM Billion") +
+          ggtitle(paste("Bar Chart : Total of Domestic Tourism Receipts by State in", input$sel_Year))+
+          theme(legend.position="none", 
+                axis.text.x = element_text(colour = "black",size = 10,face = "bold"),
+                axis.text.y = element_text(colour = "black",size = 9,face = "bold"),
+                axis.title.x = element_text(size = 12, face = "bold"),
+                axis.title.y = element_text(size = 12, face = "bold"),
+                plot.title = element_text(colour = "black", face = "bold"),
+                plot.background = element_rect(fill = input$sel_Colour))
+        
+        
+      }else if (input$sel_Plot == "Lollipop"){
+        ggplot(receiptByState(), aes(x = reorder(State, Year), y = Year))+
+          geom_point(aes(color = State), size = 10 )+
+          geom_segment(aes(x = State, xend = State, y = 0, yend = Year, color = State)) +
+          geom_text(aes(label = Year), size = 4) +
+          labs(x = "State", y = "RM Billion")+
+          ggtitle(paste("Lollipop Chart : Total of Domestic Tourism Receipts by State in", input$sel_Year)) +
+          theme(legend.position = "none",
+                axis.text.x = element_text(colour = "black",size = 10,face = "bold"),
+                axis.text.y = element_text(colour = "black",size = 9,face = "bold"),
+                axis.title.x = element_text(size = 12, face = "bold"),
+                axis.title.y = element_text(size = 12, face = "bold"),
+                plot.title = element_text(colour = "black", face = "bold"),
+                plot.background = element_rect(fill = input$sel_Colour)) +
+          coord_flip()
+      }
+      
+      
+    }else if(input$sel_Statistic == "Total Domestic Visitor Arrivals by State"){
+      
+      if(input$sel_Plot == "Bar") {
+        ggplot(visitorsByState(), aes(x = reorder(State, -Year), y = Year, fill=State)) +  
+          geom_bar(stat = "identity") +
+          geom_text(aes(label=Year), vjust=-0.3, size=3.5)+
+          labs(x ="States", y= "Number of Domestic Visitors (Million)", caption="*Notes: The number includes the same visitor who makes a trip or multiple trips in a year.") +
+          ggtitle(paste("Bar Chart : Total of Domestic Visitor Arrivals by State in", input$sel_Year))+
+          theme(legend.position="none", 
+                axis.text.x = element_text(colour = "black",size = 10,face = "bold"),
+                axis.text.y = element_text(colour = "black",size = 9,face = "bold"),
+                axis.title.x = element_text(size = 12, face = "bold"),
+                axis.title.y = element_text(size = 12, face = "bold"),
+                plot.title = element_text(colour = "black", face = "bold"),
+                plot.background = element_rect(fill = input$sel_Colour))
+        
+        
+      }else if (input$sel_Plot == "Lollipop"){
+        ggplot(visitorsByState(), aes(x = reorder(State, Year), y = Year))+
+          geom_point(aes(color = State), size = 10 )+
+          geom_segment(aes(x = State, xend = State, y = 0, yend = Year, color = State)) +
+          geom_text(aes(label = Year), size = 4) +
+          labs(x = "State", y = "Number of Domestic Visitors (Million)", caption = "*Notes: The number includes the same visitor who makes a trip or multiple trips in a year.")+
+          ggtitle(paste("Lollipop Chart : Total of Domestic Visitor Arrivals by State in", input$sel_Year)) +
+          theme(legend.position = "none",
+                axis.text.x = element_text(colour = "black",size = 10,face = "bold"),
+                axis.text.y = element_text(colour = "black",size = 9,face = "bold"),
+                axis.title.x = element_text(size = 12, face = "bold"),
+                axis.title.y = element_text(size = 12, face = "bold"),
+                plot.title = element_text(colour = "black", face = "bold"),
+                plot.background = element_rect(fill = input$sel_Colour)) +
+          coord_flip()
+      }
+    }
+    
+  })
+  
+  #data
+  output$mytable2 <- renderTable({
+    mydata2
+    
+  })
+  output$mytable3 <- renderTable({
+    data1
+    
+  })
+  output$mytable4 <- renderTable({
+    data2
+    
+  })
+
+}
+
+shinyApp(ui = ui, server = server)
